@@ -1,11 +1,13 @@
 package environment
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/go-logr/zapr"
@@ -68,16 +70,27 @@ func (e *Environment) setupCFOperator() error {
 		if remoteAddr, ok = os.LookupEnv("ssh_server_listen_address"); !ok {
 			remoteAddr = whh
 		}
+		cmd := exec.Command(
+			"ssh", "-vvfNT", "-i", "/tmp/cf-operator-tunnel-identity", "-o",
+			"UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no", "-R",
+			fmt.Sprintf("%s:%[2]d:localhost:%[2]d", remoteAddr, port),
+			fmt.Sprintf("%s@%s", sshUser, whh))
+		var output bytes.Buffer
+		cmd.Stdout = &output
+		cmd.Stderr = &output
+		err = cmd.Start()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if proc := cmd.Process; proc != nil {
+				proc.Signal(syscall.SIGTERM)
+			}
+		}()
 		go func() {
-			cmd := exec.Command(
-				"ssh", "-fNT", "-i", "/tmp/cf-operator-tunnel-identity", "-o",
-				"UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no", "-R",
-				fmt.Sprintf("%s:%[2]d:localhost:%[2]d", remoteAddr, port),
-				fmt.Sprintf("%s@%s", sshUser, whh))
-
-			stdOutput, err := cmd.CombinedOutput()
+			err := cmd.Wait()
 			if err != nil {
-				fmt.Printf("SSH TUNNEL FAILED: %f\nOUTPUT: %s", err, string(stdOutput))
+				fmt.Printf("SSH TUNNEL FAILED: %w\nOUTPUT: %s\n", err, output.String())
 			}
 		}()
 	}
