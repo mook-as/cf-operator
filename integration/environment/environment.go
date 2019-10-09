@@ -82,6 +82,7 @@ func ApplyCRDs(kubeConfig *rest.Config) error {
 func NewEnvironment(kubeConfig *rest.Config) *Environment {
 	atomic.AddInt32(&namespaceCounter, 1)
 	namespaceID := gomegaConfig.GinkgoConfig.ParallelNode*100 + int(namespaceCounter)
+	log.Printf("DEBUG: setting up new environment\n")
 
 	return &Environment{
 		ID:        namespaceID,

@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"k8s.io/client-go/rest"
@@ -32,10 +33,12 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	}
 
 	// Ginkgo node 1 gets to setup the CRDs
+	log.Printf("DEBUG: Applying CRDs")
 	err = environment.ApplyCRDs(kubeConfig)
 	if err != nil {
 		fmt.Printf("WARNING: failed to apply CRDs: %v\n", err)
 	}
+	log.Printf("DEBUG: CRDs applied")
 
 	return []byte{}
 }, func([]byte) {

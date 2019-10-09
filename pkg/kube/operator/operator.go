@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"log"
 
 	"github.com/pkg/errors"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -115,10 +116,12 @@ func ApplyCRDs(config *rest.Config) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to apply CRD '%s'", res.name)
 		}
+		log.Printf("DEBUG: Waiting for CRD '%s' to be ready...\n", res.name)
 		err = crd.WaitForCRDReady(exClient, res.name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to wait for CRD '%s' ready", res.name)
 		}
+		log.Printf("DEBUG: CRD '%s' is ready\n", res.name)
 	}
 
 	return nil

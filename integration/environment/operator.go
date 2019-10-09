@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/go-logr/zapr"
@@ -63,6 +63,8 @@ func (e *Environment) setupCFOperator() error {
 		return err
 	}
 
+	log.Printf("DEBUG: Setting up webhook on %s:%d\n", whh, port)
+
 	sshUser, shouldForwardPort := os.LookupEnv("ssh_server_user")
 	if shouldForwardPort {
 		var remoteAddr string
@@ -70,6 +72,7 @@ func (e *Environment) setupCFOperator() error {
 		if remoteAddr, ok = os.LookupEnv("ssh_server_listen_address"); !ok {
 			remoteAddr = whh
 		}
+		log.Printf("DEBUG: Port forward: localhost:%[1]d -> %s:%[1]d via %[3]s\n", port, remoteAddr, whh)
 		cmd := exec.Command(
 			"ssh", "-vvfNT", "-i", "/tmp/cf-operator-tunnel-identity", "-o",
 			"UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no", "-R",
@@ -82,15 +85,12 @@ func (e *Environment) setupCFOperator() error {
 		if err != nil {
 			return err
 		}
-		defer func() {
-			if proc := cmd.Process; proc != nil {
-				proc.Signal(syscall.SIGTERM)
-			}
-		}()
 		go func() {
 			err := cmd.Wait()
 			if err != nil {
 				fmt.Printf("SSH TUNNEL FAILED: %w\nOUTPUT: %s\n", err, output.String())
+			} else {
+				fmt.Printf("SSH TUNNEL (port %d) CLOSED:\n%s\n", port, output.String())
 			}
 		}()
 	}
