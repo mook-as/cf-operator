@@ -134,6 +134,7 @@ func (e *Environment) setupCFOperator() error {
 }
 
 func (e *Environment) startOperator() chan struct{} {
+	log.Printf("DEBUG: Starting operator\n")
 	stop := make(chan struct{})
 	go func() {
 		err := e.mgr.Start(stop)

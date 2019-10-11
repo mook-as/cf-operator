@@ -94,7 +94,7 @@ func NewEnvironment(kubeConfig *rest.Config) *Environment {
 			Fs:                   afero.NewOsFs(),
 		},
 		Machine: Machine{
-			pollTimeout:  300 * time.Second,
+			pollTimeout:  30 * time.Second,
 			pollInterval: 500 * time.Millisecond,
 		},
 		KubeConfig: kubeConfig,

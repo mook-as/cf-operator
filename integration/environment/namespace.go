@@ -2,6 +2,7 @@ package environment
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -26,6 +27,7 @@ func (e *Environment) SetupNamespace() error {
 	}
 
 	e.Teardown = func(wasFailure bool) {
+		log.Printf("DEBUG: Tearing down... failure? %v\n", wasFailure)
 		if wasFailure {
 			fmt.Println("Collecting debug information...")
 
