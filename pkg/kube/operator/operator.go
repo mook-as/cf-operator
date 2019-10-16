@@ -65,6 +65,7 @@ func NewManager(ctx context.Context, config *config.Config, cfg *rest.Config, op
 
 // ApplyCRDs applies a collection of CRDs into the cluster
 func ApplyCRDs(config *rest.Config) error {
+	log.Printf("DEBUG: Applying CRDs...\n")
 	exClient, err := extv1client.NewForConfig(config)
 	if err != nil {
 		return errors.Wrap(err, "Could not get kube client")

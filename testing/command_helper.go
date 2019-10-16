@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os/exec"
 	"runtime/debug"
 	"strings"
@@ -393,11 +394,13 @@ func DeleteWebhooks(ns string) error {
 	var messages string
 	webHookName := fmt.Sprintf("%s-%s", "cf-operator-hook", ns)
 
+	log.Printf("Deleting mutating webhook %s\n", webHookName)
 	_, err := runBinary(kubeCtlCmd, "delete", "--ignore-not-found", "mutatingwebhookconfiguration", webHookName)
 	if err != nil {
 		messages = fmt.Sprintf("%v%v\n", messages, err.Error())
 	}
 
+	log.Printf("Deleting validating webhook %s\n", webHookName)
 	_, err = runBinary(kubeCtlCmd, "delete", "--ignore-not-found", "validatingwebhookconfiguration", webHookName)
 	if err != nil {
 		messages = fmt.Sprintf("%v%v\n", messages, err.Error())

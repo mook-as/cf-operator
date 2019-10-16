@@ -33,6 +33,22 @@ func (e *Environment) SetupLoggerContext(prefix string) context.Context {
 
 // StartOperator prepares and starts the cf-operator
 func (e *Environment) StartOperator() error {
+	runShell := func(shellCommand ...string) {
+		log.Printf("Running shell command: %s\n", shellCommand)
+		cmd := exec.Command(shellCommand[0], shellCommand[1:]...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Printf("DEBUG: Failed to run command %s: %s\n", shellCommand, err)
+		} else {
+			log.Printf("DEBUG: Ran shell command: %s\n", shellCommand)
+		}
+	}
+	runShell("/bin/sh", "-c", "kubectl get namespace -o name | grep namespace/test")
+	runShell("/bin/sh", "-c", "kubectl get MutatingWebHookConfiguration -o name | grep cf-operator-hook-test")
+	runShell("/bin/sh", "-c", "kubectl get ValidatingWebHookConfiguration -o name | grep cf-operator-hook-test")
+	runShell("/bin/sh", "-c", "kubectl get CustomResourceDefinitions -o name | grep cloudfoundry.org")
+
 	err := e.setupCFOperator()
 	if err != nil {
 		return errors.Wrapf(err, "Setting up CF Operator failed.")
@@ -46,6 +62,19 @@ func (e *Environment) StartOperator() error {
 	if err != nil {
 		return errors.Wrapf(err, "Integration setup failed. Waiting for port %d failed.", e.Config.WebhookServerPort)
 	}
+
+	serverAddr, ok := os.LookupEnv("ssh_server_user")
+	if !ok {
+		serverAddr = "10.84.225.254"
+	}
+	log.Printf("DEBUG: operator started on %s:%d\n", serverAddr, e.Config.WebhookServerPort)
+	runShell("/bin/sh", "-c", fmt.Sprintf("ss -nltp | grep %d", e.Config.WebhookServerPort))
+	runShell("/bin/sh", "-c", fmt.Sprintf("curl -v http://%s:2015/", serverAddr))
+	runShell("/bin/sh", "-c", fmt.Sprintf("curl -kv https://%s:%d/", serverAddr, e.Config.WebhookServerPort))
+	runShell("kubectl", "exec", "-nkube-system", "oidc-gangway-7b7fbbdbdf-mnzrw", "--",
+			"/bin/bash", "-c",
+		fmt.Sprintf(`{ exec 9<>/dev/tcp/%s/%d ; printf "GET / HTTP/1.0\r\n\r\n" >&9 ; cat <&9 ; 9<&-; }`,
+			serverAddr, e.Config.WebhookServerPort))
 
 	return nil
 }
@@ -74,7 +103,7 @@ func (e *Environment) setupCFOperator() error {
 		}
 		log.Printf("DEBUG: Port forward: localhost:%[1]d -> %s:%[1]d via %[3]s\n", port, remoteAddr, whh)
 		cmd := exec.Command(
-			"ssh", "-vvfNT", "-i", "/tmp/cf-operator-tunnel-identity", "-o",
+			"ssh", "-fNT", "-i", "/tmp/cf-operator-tunnel-identity", "-o",
 			"UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no", "-R",
 			fmt.Sprintf("%s:%[2]d:localhost:%[2]d", remoteAddr, port),
 			fmt.Sprintf("%s@%s", sshUser, whh))
