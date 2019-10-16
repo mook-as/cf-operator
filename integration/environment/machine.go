@@ -2,6 +2,7 @@ package environment
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"strings"
 	"time"
@@ -57,6 +58,7 @@ func (m *Machine) CreateNamespace(namespace string) (TearDownFunc, error) {
 			PropagationPolicy:  &b,
 		})
 		if err != nil && !apierrors.IsNotFound(err) {
+			log.Printf("ERROR: Failed to delete namespace %s: %v\n", namespace, err)
 			return err
 		}
 		return nil

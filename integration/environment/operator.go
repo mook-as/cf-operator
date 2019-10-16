@@ -48,6 +48,11 @@ func (e *Environment) StartOperator() error {
 	runShell("/bin/sh", "-c", "kubectl get MutatingWebHookConfiguration -o name | grep cf-operator-hook-test")
 	runShell("/bin/sh", "-c", "kubectl get ValidatingWebHookConfiguration -o name | grep cf-operator-hook-test")
 	runShell("/bin/sh", "-c", "kubectl get CustomResourceDefinitions -o name | grep cloudfoundry.org")
+	runShell("/bin/sh", "-c", fmt.Sprintf(`(
+		kubectl get namespace -o name | grep namespace/test | grep -v %s;
+		kubectl get MutatingWebHookConfiguration -o name | grep cf-operator-hook-test ;
+		kubectl get ValidatingWebHookConfiguration -o name | grep cf-operator-hook-test ;
+	) | xargs --no-run-if-empty kubectl delete --wait=false --ignore-not-found`, e.Namespace))
 
 	err := e.setupCFOperator()
 	if err != nil {
@@ -63,13 +68,9 @@ func (e *Environment) StartOperator() error {
 		return errors.Wrapf(err, "Integration setup failed. Waiting for port %d failed.", e.Config.WebhookServerPort)
 	}
 
-	serverAddr, ok := os.LookupEnv("ssh_server_user")
-	if !ok {
-		serverAddr = "10.84.225.254"
-	}
+	serverAddr := os.Getenv("CF_OPERATOR_WEBHOOK_SERVICE_HOST")
 	log.Printf("DEBUG: operator started on %s:%d\n", serverAddr, e.Config.WebhookServerPort)
 	runShell("/bin/sh", "-c", fmt.Sprintf("ss -nltp | grep %d", e.Config.WebhookServerPort))
-	runShell("/bin/sh", "-c", fmt.Sprintf("curl -v http://%s:2015/", serverAddr))
 	runShell("/bin/sh", "-c", fmt.Sprintf("curl -kv https://%s:%d/", serverAddr, e.Config.WebhookServerPort))
 	runShell("kubectl", "exec", "-nkube-system", "oidc-gangway-7b7fbbdbdf-mnzrw", "--",
 			"/bin/bash", "-c",
