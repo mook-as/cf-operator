@@ -13,6 +13,12 @@ fi
 # Build the required helm charts to run the cf-operator
 ./bin/build-helm
 
+(
+    kubectl get namespace -o name                       | grep test-storage
+    kubectl get mutatingwebhookconfigurations -o name   | grep cf-operator
+    kubectl get validatingwebhookconfigurations -o name | grep cf-operator
+) | xargs --no-run-if-empty kubectl delete --wait
+
 NODES=${NODES:-3}
 FLAKE_ATTEMPTS=${FLAKE_ATTEMPTS:-3}
 ginkgo \

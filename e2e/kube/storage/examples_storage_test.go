@@ -110,6 +110,12 @@ var _ = Describe("Examples", func() {
 				exampleTmpFilePath, err := AddTestStorageClassToVolumeClaimTemplates(yamlFilePath, class)
 				Expect(err).ToNot(HaveOccurred())
 
+				func(p string) {
+					buf, err := ioutil.ReadFile(p)
+					Expect(err).ToNot(HaveOccurred())
+					os.Stdout.Write(buf)
+				}(exampleTmpFilePath)
+
 				By("Creating exstatefulset pvcs")
 				err = cmdHelper.Create(namespace, exampleTmpFilePath)
 				Expect(err).ToNot(HaveOccurred())
