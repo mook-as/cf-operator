@@ -22,6 +22,7 @@ fi
 NODES=${NODES:-3}
 FLAKE_ATTEMPTS=${FLAKE_ATTEMPTS:-3}
 ginkgo \
+  -mod=vendor \
   --nodes="$NODES" \
   --flakeAttempts="$FLAKE_ATTEMPTS" \
   e2e/kube/storage
