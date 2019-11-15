@@ -49,7 +49,7 @@ type ExtendedStatefulSetSpec struct {
 // ExtendedStatefulSetStatus defines the observed state of ExtendedStatefulSet
 type ExtendedStatefulSetStatus struct {
 	// Timestamp for the last reconcile
-	LastReconcile *metav1.Time `json:"lastReconcile"`
+	LastReconcile *metav1.Time `json:"lastReconcile",omitempty`
 }
 
 // +genclient
