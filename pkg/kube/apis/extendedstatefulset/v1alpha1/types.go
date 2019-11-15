@@ -62,7 +62,7 @@ type ExtendedStatefulSet struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   ExtendedStatefulSetSpec   `json:"spec,omitempty"`
-	Status ExtendedStatefulSetStatus `json:"status,omitempty"`
+	Status ExtendedStatefulSetStatus `json:"-"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
